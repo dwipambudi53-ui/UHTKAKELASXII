@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ulangan Harian - Bahasa Indonesia XII</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #0f766e; /* Tosca Green */
+            --primary-light: #ccfbf1;
+            --primary-dark: #115e59;
+            --secondary: #0ea5e9; /* Light Blue */
+            --bg-color: #f8fafc;
+            --text-main: #334155;
+            --text-light: #64748b;
+            --white: #ffffff;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --border: #e2e8f0;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; }
+        
+        /* Typography */
+        h1, h2, h3 { color: var(--primary-dark); }
+        .text-center { text-align: center; }
+        .font-bold { font-weight: 700; }
+        .text-sm { font-size: 0.875rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-danger { color: var(--danger); }
+        .text-success { color: var(--success); }
+
+        /* Layout */
+        .container { max-width: 800px; margin: 0 auto; padding: 1rem; }
+        .card { background: var(--white); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.5rem; }
+        
+        /* Header */
+        header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: var(--white); padding: 2rem 1rem; text-align: center; border-radius: 0 0 var(--radius) var(--radius); box-shadow: var(--shadow); margin-bottom: 2rem; }
+        header h1 { color: var(--white); margin-bottom: 0.5rem; font-size: 1.8rem; }
+        header p { opacity: 0.9; font-size: 0.95rem; }
+
+        /* Form */
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-main); }
+        .form-control { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; transition: all 0.3s; }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+        select.form-control { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1.2rem; }
+
+        /* Buttons */
+        .btn { display: inline-block; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .btn-primary { background: var(--primary); color: var(--white); }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--white); color: var(--primary); border: 1px solid var(--primary); }
+        .btn-secondary:hover { background: var(--primary-light); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-block { width: 100%; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Quiz Interface */
+        .quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 2px solid var(--border); flex-wrap: wrap; gap: 10px; }
+        .timer-badge { background: var(--warning); color: white; padding: 0.5rem 1rem; border-radius: 99px; font-weight: bold; font-size: 1.1rem; display: flex; align-items: center; gap: 5px; }
+        .timer-badge.danger { background: var(--danger); animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        
+        .progress-container { width: 100%; background: var(--border); border-radius: 99px; height: 10px; margin-bottom: 1.5rem; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--primary); transition: width 0.3s ease; }
+
+        .question-text { font-size: 1.1rem; margin-bottom: 1.5rem; text-align: justify; }
+        .stimulus { background: var(--primary-light); padding: 1rem; border-left: 4px solid var(--primary); border-radius: 4px; margin-bottom: 1rem; font-size: 0.95rem; }
+        
+        /* Options */
+        .options-grid { display: flex; flex-direction: column; gap: 0.75rem; }
+        .option-label { display: flex; align-items: flex-start; gap: 10px; padding: 1rem; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s; background: var(--white); }
+        .option-label:hover { border-color: var(--primary); background: var(--primary-light); }
+        .option-label input { margin-top: 4px; width: 1.2rem; height: 1.2rem; accent-color: var(--primary); cursor: pointer;}
+        .option-label.selected { border-color: var(--primary); background: var(--primary-light); font-weight: 600; }
+        
+        /* Navigation */
+        .quiz-nav { display: flex; justify-content: space-between; margin-top: 2rem; gap: 1rem; }
+        
+        /* Number Grid */
+        .number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 8px; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+        .num-btn { width: 100%; aspect-ratio: 1; border: 1px solid var(--border); background: var(--white); border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; padding: 0;}
+        .num-btn.answered { background: var(--success); color: white; border-color: var(--success); }
+        .num-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+
+        /* Views */
+        .view { display: none; animation: fadeIn 0.3s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Modals & Toasts */
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(17, 24, 39, 0.9); color: white; padding: 1rem 2rem; border-radius: 8px; font-weight: 600; z-index: 1000; display: none; text-align: center; box-shadow: var(--shadow); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+        .modal { background: white; padding: 2rem; border-radius: var(--radius); max-width: 400px; width: 100%; box-shadow: var(--shadow); text-align: center; }
+        .modal h3 { margin-bottom: 1rem; }
+        .modal-buttons { display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem; }
+
+        /* Table */
+        .table-responsive { overflow-x: auto; margin-top: 1rem; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: var(--primary-light); color: var(--primary-dark); font-weight: 600; }
+        tr:hover { background: #f1f5f9; }
+
+        /* Footer */
+        footer { text-align: center; padding: 2rem 1rem; color: var(--text-light); font-size: 0.875rem; margin-top: 2rem; }
+
+        /* Utils */
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .mt-1 { margin-top: 0.5rem; } .mt-2 { margin-top: 1rem; } .mt-3 { margin-top: 1.5rem; } .mb-2 { margin-bottom: 1rem; }
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            header { padding: 1.5rem 1rem; }
+            header h1 { font-size: 1.4rem; }
+            .quiz-header { flex-direction: column; align-items: flex-start; }
+            .timer-badge { align-self: flex-end; margin-top: -40px; }
+            .btn { width: 100%; margin-bottom: 0.5rem; }
+            .quiz-nav { flex-direction: column-reverse; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <h1>ULANGAN HARIAN</h1>
+        <p class="font-bold">MATA PELAJARAN BAHASA INDONESIA</p>
+        <p>SMK KELAS XII - TAHUN 2026</p>
+        <p class="text-sm mt-1">Guru Mata Pelajaran: Dwi Harry Pambudi, M.Pd<br>SMK NEGERI 2 SONGGOM</p>
+    </header>
+
+    <div class="container">
+        
+        <!-- VIEW: LOGIN PESERTA -->
+        <div id="view-login" class="view active">
+            <div class="card">
+                <h2 class="text-center mb-2">Identitas Peserta</h2>
+                <p class="text-center text-light mb-3">Silakan lengkapi data diri Anda sebelum memulai ujian.</p>
+                <div class="form-group">
+                    <label for="nama">Nama Lengkap</label>
+                    <input type="text" id="nama" class="form-control" placeholder="Masukkan nama lengkap" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="nis">Nomor Induk Siswa (NIS)</label>
+                    <input type="number" id="nis" class="form-control" placeholder="Masukkan NIS" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="kelas">Kelas</label>
+                    <input type="text" id="kelas" class="form-control" placeholder="Masukkan Kelas (Misal: XII TKJ 1)" required autocomplete="off">
+                </div>
+                <button class="btn btn-primary btn-block mt-2" onclick="startQuiz()">MULAI ULANGAN</button>
+            </div>
+            
+            <div class="text-center mt-3">
+                <button class="btn btn-secondary" onclick="showTeacherLogin()">MENU GURU</button>
+            </div>
+        </div>
+
+        <!-- VIEW: UJIAN -->
+        <div id="view-quiz" class="view">
+            <div class="card">
+                <div class="quiz-header">
+                    <div>
+                        <div class="font-bold text-lg" id="student-info">Nama - Kelas</div>
+                        <div class="text-light" id="question-counter">Soal 1 dari 50</div>
+                    </div>
+                    <div class="timer-badge" id="timerDisplay">
+                        ⏱️ 120:00
+                    </div>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                </div>
+
+                <div id="question-container">
+                    <!-- Soal dirender di sini via JS -->
+                </div>
+
+                <div class="quiz-nav">
+                    <button class="btn btn-secondary" id="btn-prev" onclick="changeQuestion(-1)">SEBELUMNYA</button>
+                    <button class="btn btn-primary" id="btn-next" onclick="changeQuestion(1)">BERIKUTNYA</button>
+                    <button class="btn btn-danger hidden" id="btn-finish" onclick="confirmFinish()">SELESAI & KUMPULKAN</button>
+                </div>
+
+                <div class="number-grid" id="numberGrid">
+                    <!-- Nomor soal dirender di sini -->
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: HASIL SISWA -->
+        <div id="view-result" class="view">
+            <div class="card text-center">
+                <h2 class="mb-3 text-primary">UJIAN TELAH SELESAI</h2>
+                <div style="background: var(--bg-color); padding: 1.5rem; border-radius: 8px; text-align: left; margin-bottom: 1.5rem;">
+                    <p><strong>Nama:</strong> <span id="res-nama"></span></p>
+                    <p><strong>NIS:</strong> <span id="res-nis"></span></p>
+                    <p><strong>Kelas:</strong> <span id="res-kelas"></span></p>
+                    <hr style="margin: 10px 0; border: 0; border-top: 1px solid var(--border);">
+                    <p><strong>Jumlah Soal:</strong> 50</p>
+                    <p><strong>Terjawab:</strong> <span id="res-terjawab"></span></p>
+                    <p><strong>Waktu Pengerjaan:</strong> <span id="res-waktu"></span></p>
+                    <p class="text-danger"><strong>Pelanggaran Tab:</strong> <span id="res-pelanggaran"></span> kali</p>
+                </div>
+                
+                <h3 style="font-size: 4rem; margin: 1rem 0; color: var(--primary-dark);" id="res-nilai">100</h3>
+                <div id="res-status" style="font-size: 1.5rem; font-weight: bold; margin-bottom: 2rem;">LULUS</div>
+                
+                <p class="text-light text-sm">Terima kasih telah mengikuti Ulangan Harian. Anda dapat menutup halaman ini.</p>
+            </div>
+        </div>
+
+        <!-- VIEW: DASHBOARD GURU -->
+        <div id="view-teacher" class="view">
+            <div class="card">
+                <div class="flex-between mb-3">
+                    <h2>Rekap Hasil Peserta</h2>
+                    <button class="btn btn-secondary" onclick="logoutTeacher()">Kembali</button>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="exportExcel()">DOWNLOAD REKAP EXCEL</button>
+                    <button class="btn btn-danger" onclick="confirmClearData()">Hapus Seluruh Data</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="teacher-table">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama</th>
+                                <th>NIS</th>
+                                <th>Kelas</th>
+                                <th>Nilai</th>
+                                <th>Status</th>
+                                <th>Waktu</th>
+                                <th>Pelanggaran</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacher-tbody">
+                            <!-- Data tabel -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>Ulangan Harian Bahasa Indonesia – Kelas XII SMK Tahun 2026</p>
+        <p>Guru Mata Pelajaran: Dwi Harry Pambudi, M.Pd | SMK Negeri 2 Songgom</p>
+    </footer>
+
+    <!-- Toasts & Modals -->
+    <div id="toast" class="toast">Notifikasi</div>
+
+    <div id="modal-confirm" class="modal-overlay">
+        <div class="modal">
+            <h3 id="modal-title">Konfirmasi</h3>
+            <p id="modal-desc">Apakah Anda yakin?</p>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal()">BATAL</button>
+                <button class="btn btn-primary" id="modal-action-btn">YA, YAKIN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN SCRIPT -->
+    <script>
+        // --- 1. DATA SOAL (50 Soal) ---
+        // Komposisi: 30 PG (A-E), 10 Benar/Salah, 10 PG Kompleks. Termasuk HOTS.
+        const questions = [
+            // --- BAGIAN A: Pilihan Ganda (1-30) ---
+            { id: 1, type: 'mc', 
+              text: 'Bacalah kutipan teks berikut!\n"Penggunaan gawai yang berlebihan pada remaja seringkali menyebabkan *cyber-syndrome* yang memengaruhi pola tidur mereka."\nKata serapan yang tepat untuk menggantikan istilah asing yang dicetak miring agar sesuai dengan kaidah bahasa Indonesia adalah...', 
+              options: ['A. Sindrom siber', 'B. Sindrom maya', 'C. Gejala siber', 'D. Sindroma internet', 'E. Penyakit siber'], 
+              answer: 'A. Sindrom siber' },
+            { id: 2, type: 'mc', 
+              text: 'Bacalah teks berikut dengan saksama!\n(1) Pendidikan vokasi di SMK bertujuan mencetak lulusan siap kerja. (2) Namun, fakta di lapangan menunjukkan masih ada ketidaksesuaian antara keterampilan lulusan dan kebutuhan industri. (3) Kurikulum yang terlalu teoritis menjadi salah satu penyebabnya. (4) Oleh karena itu, *link and match* antara sekolah dan industri mutlak diperlukan.\n\nKalimat yang menunjukkan opini penulis terdapat pada nomor...', 
+              options: ['A. (1) dan (2)', 'B. (2) dan (3)', 'C. (3) dan (4)', 'D. (1) dan (4)', 'E. (2) dan (4)'], 
+              answer: 'C. (3) dan (4)' },
+            { id: 3, type: 'mc',
+              text: 'Cermati paragraf berikut!\nGlobalisasi memberikan dampak yang masif di berbagai bidang kehidupan. Arus informasi mengalir deras tanpa batas negara. Budaya lokal mulai terpinggirkan oleh tren budaya pop internasional. Anak muda lebih hafal lagu-lagu asing daripada lagu daerah. \n\nIde pokok paragraf tersebut adalah...',
+              options: ['A. Anak muda menyukai budaya pop.', 'B. Arus informasi yang mengalir deras.', 'C. Dampak globalisasi di berbagai bidang.', 'D. Terpinggirkannya budaya lokal.', 'E. Batas negara yang semakin kabur.'],
+              answer: 'C. Dampak globalisasi di berbagai bidang.' },
+            { id: 4, type: 'mc',
+              stimulus: 'Teks: "Ketika mentari mulai menyapa dari ufuk timur, Randi sudah berada di bengkel kecilnya. Tangan legamnya dengan cekatan merakit sisa-sisa besi tua. Meski banyak yang mencibir mimpinya membuat mobil listrik mini, ia hanya tersenyum tipis dan terus mengencangkan baut."',
+              text: 'Berdasarkan cuplikan cerpen di atas, karakter tokoh Randi dideskripsikan melalui...',
+              options: ['A. Penjelasan langsung oleh pengarang', 'B. Dialog antartokoh', 'C. Pikiran-pikiran tokoh', 'D. Tanggapan tokoh lain', 'E. Tindakan dan fisik tokoh'],
+              answer: 'E. Tindakan dan fisik tokoh' },
+            { id: 5, type: 'mc',
+              text: 'Manakah penulisan kata serapan yang paling tepat berdasarkan Pedoman Umum Ejaan Bahasa Indonesia (PUEBI)?',
+              options: ['A. Standardisasi, frekuensi, risiko', 'B. Standarisasi, frekwensi, resiko', 'C. Standardisasi, frekwensi, resiko', 'D. Standarisasi, frekuensi, risiko', 'E. Standardisasi, frekuensi, resiko'],
+              answer: 'A. Standardisasi, frekuensi, risiko' },
+            { id: 6, type: 'mc',
+              stimulus: 'Data kecelakaan kerja di bengkel praktik siswa SMK X tahun 2025 menunjukkan angka 15 kejadian ringan. Pada tahun 2026, setelah diterapkan SOP ketat dan penggunaan APD wajib, angka kecelakaan turun menjadi 2 kejadian.',
+              text: 'Simpulan yang paling tepat berdasarkan data tersebut adalah...',
+              options: ['A. Siswa SMK X tidak mahir menggunakan mesin.', 'B. Penerapan SOP dan APD efektif menekan angka kecelakaan kerja.', 'C. Kecelakaan kerja di bengkel tidak dapat dihindari.', 'D. Guru tidak mengawasi siswa pada tahun 2025.', 'E. APD adalah satu-satunya alat keselamatan di bengkel.'],
+              answer: 'B. Penerapan SOP dan APD efektif menekan angka kecelakaan kerja.' },
+            { id: 7, type: 'mc',
+              text: 'Cermati kalimat berikut!\n"Pemerintah terus berupaya meningkatkan *kualitas* pendidikan menengah kejuruan agar lulusannya mampu *berkompetisi* di tingkat global."\nMakna kata yang dicetak miring pada kalimat tersebut adalah...',
+              options: ['A. Mutu dan bersaing', 'B. Kuantitas dan bertanding', 'C. Nilai dan berjuang', 'D. Derajat dan berlomba', 'E. Kapasitas dan berkolaborasi'],
+              answer: 'A. Mutu dan bersaing' },
+            { id: 8, type: 'mc',
+              text: 'Dalam struktur teks argumentasi, bagian yang memuat fakta-fakta, data, dan alasan logis untuk mendukung pendapat penulis disebut...',
+              options: ['A. Tesis', 'B. Argumentasi / Badan argumen', 'C. Penegasan ulang', 'D. Pernyataan pendapat', 'E. Simpulan'],
+              answer: 'B. Argumentasi / Badan argumen' },
+            { id: 9, type: 'mc',
+              stimulus: '"Sistem pertanian hidroponik sangat cocok diterapkan di lahan sempit perkotaan. Selain hemat tempat, metode ini juga diklaim lebih hemat air. Sayangnya, biaya awal instalasi yang cukup mahal membuat sebagian warga ragu mencobanya."',
+              text: 'Jika peristiwa tersebut dikaitkan dengan kehidupan masyarakat di lingkungan perkotaan, pernyataan yang paling relevan adalah...',
+              options: ['A. Masyarakat kota lebih suka membeli sayur di pasar.', 'B. Hidroponik adalah solusi pertanian, namun terhambat modal ekonomi.', 'C. Pertanian hanya cocok di daerah pedesaan yang luas.', 'D. Pemerintah harus membagikan sayuran gratis di kota.', 'E. Warga kota tidak peduli dengan metode bercocok tanam.'],
+              answer: 'B. Hidroponik adalah solusi pertanian, namun terhambat modal ekonomi.' },
+            { id: 10, type: 'mc',
+              text: 'Bacalah puisi berikut!\n*Pagiku hilang sudah melayang,*\n*Hari mudaku sudah pergi,*\n*Sekarang petang datang membayang,*\n*Batang usiaku sudah tinggi.*\n\n(Chairil Anwar)\nMajas yang paling dominan digunakan dalam bait puisi di atas adalah...',
+              options: ['A. Personifikasi', 'B. Metafora', 'C. Hiperbola', 'D. Litotes', 'E. Ironi'],
+              answer: 'B. Metafora' },
+            // Soal 11-30 dipersingkat formatnya untuk efisiensi memori, tapi tetap standar soal ujian.
+            { id: 11, type: 'mc', text: 'Perbaikan kalimat "Buku itu saya sudah baca kemarin" yang sesuai kaidah bahasa adalah...', options: ['A. Saya sudah baca buku itu kemarin.', 'B. Buku itu sudah dibaca saya kemarin.', 'C. Sudah saya baca buku itu kemarin.', 'D. Buku itu sudah saya baca kemarin.', 'E. Kemarin saya sudah membaca itu buku.'], answer: 'D. Buku itu sudah saya baca kemarin.' },
+            { id: 12, type: 'mc', text: 'Konjungsi yang tepat untuk menghubungkan kalimat "Ia tidak lulus ujian." dan "Ia tidak pernah belajar." adalah...', options: ['A. karena', 'B. sehingga', 'C. padahal', 'D. meskipun', 'E. bahkan'], answer: 'A. karena' },
+            { id: 13, type: 'mc', text: 'Struktur teks laporan hasil observasi yang benar adalah...', options: ['A. Tesis, argumen, penegasan', 'B. Pernyataan umum, deskripsi bagian, deskripsi manfaat', 'C. Orientasi, komplikasi, resolusi', 'D. Abstraksi, krisis, reaksi', 'E. Orientasi, insiden, interpretasi'], answer: 'B. Pernyataan umum, deskripsi bagian, deskripsi manfaat' },
+            { id: 14, type: 'mc', text: 'Makna ungkapan "tangan besi" dalam kalimat "Pemimpin itu memerintah dengan tangan besi" adalah...', options: ['A. Lemah lembut', 'B. Kejam dan keras', 'C. Penuh kasih sayang', 'D. Sangat kuat', 'E. Bijaksana'], answer: 'B. Kejam dan keras' },
+            { id: 15, type: 'mc', text: 'Unsur ekstrinsik karya sastra meliputi hal berikut, KECUALI...', options: ['A. Biografi pengarang', 'B. Nilai sosial budaya', 'C. Latar belakang sejarah', 'D. Alur dan penokohan', 'E. Kondisi politik saat karya ditulis'], answer: 'D. Alur dan penokohan' },
+            { id: 16, type: 'mc', stimulus: 'Teks: "Hutan hujan tropis memiliki peran penting sebagai paru-paru dunia. Kerusakan hutan dapat memicu pemanasan global yang ekstrem."', text: 'Tujuan komunikatif teks di atas adalah...', options: ['A. Menceritakan pengalaman', 'B. Menggambarkan keindahan hutan', 'C. Menginformasikan fakta ilmiah', 'D. Menghibur pembaca', 'E. Menyindir perusak hutan'], answer: 'C. Menginformasikan fakta ilmiah' },
+            { id: 17, type: 'mc', text: 'Kata bentukan yang penulisannya salah adalah...', options: ['A. Memesona', 'B. Menerjemahkan', 'C. Memengaruhi', 'D. Menyintai', 'E. Mengonsumsi'], answer: 'D. Menyintai' },
+            { id: 18, type: 'mc', text: 'Informasi manakah yang paling membutuhkan verifikasi lebih lanjut?', options: ['A. Matahari terbit dari timur.', 'B. Indonesia merdeka tahun 1945.', 'C. Minum rebusan daun X menyembuhkan segala jenis kanker dalam 2 hari.', 'D. Air mendidih pada suhu 100 derajat Celcius.', 'E. Ibukota Jawa Tengah adalah Semarang.'], answer: 'C. Minum rebusan daun X menyembuhkan segala jenis kanker dalam 2 hari.' },
+            { id: 19, type: 'mc', text: 'Ciri utama kalimat pasif adalah...', options: ['A. Subjek melakukan pekerjaan', 'B. Predikat berawalan me-', 'C. Subjek dikenai pekerjaan', 'D. Tidak memiliki objek', 'E. Berupa kalimat perintah'], answer: 'C. Subjek dikenai pekerjaan' },
+            { id: 20, type: 'mc', text: 'Penggunaan tanda koma (,) yang tepat terdapat pada kalimat...', options: ['A. Ayah membeli, apel, mangga dan pisang.', 'B. Karena sakit, ia tidak masuk sekolah.', 'C. Ia berjanji akan datang, tetapi hujan turun deras.', 'D. B dan C benar.', 'E. Semua salah.'], answer: 'D. B dan C benar.' },
+            { id: 21, type: 'mc', text: 'Istilah "Anekdot" merujuk pada...', options: ['A. Cerita lucu yang memiliki unsur sindiran/kritik', 'B. Cerita rakyat zaman dahulu', 'C. Puisi lama bersajak abab', 'D. Drama tragedi', 'E. Laporan perjalanan'], answer: 'A. Cerita lucu yang memiliki unsur sindiran/kritik' },
+            { id: 22, type: 'mc', text: 'Bagian orientasi pada cerpen berfungsi untuk...', options: ['A. Memunculkan konflik', 'B. Menyelesaikan masalah', 'C. Mengenalkan latar dan tokoh', 'D. Memberikan pesan moral', 'E. Menegaskan kembali isi cerita'], answer: 'C. Mengenalkan latar dan tokoh' },
+            { id: 23, type: 'mc', text: 'Berdasarkan kaidah bahasa, penulisan gelar yang benar adalah...', options: ['A. Prof. Dr. Ir. Budi Santoso M.Si', 'B. Prof. Dr. Ir. Budi Santoso, M.Si.', 'C. Prof, Dr, Ir, Budi Santoso, M.Si.', 'D. Prof Dr Ir Budi Santoso M.Si.', 'E. Prof. Dr. Ir. Budi Santoso, M. Si'], answer: 'B. Prof. Dr. Ir. Budi Santoso, M.Si.' },
+            { id: 24, type: 'mc', text: 'Kalimat yang menggunakan ragam bahasa baku adalah...', options: ['A. Kita harus bikin rencana yang matang.', 'B. Dia ngga tau menau soal masalah itu.', 'C. Sistem administrasi harus segera diperbaiki.', 'D. Kenapa kamu nggak datang kemarin?', 'E. Tolong fotokopi ijazah ini buat besok.'], answer: 'C. Sistem administrasi harus segera diperbaiki.' },
+            { id: 25, type: 'mc', stimulus: '"Angin berbisik lembut di telingaku malam itu."\n', text: 'Majas pada kalimat di atas adalah...', options: ['A. Litotes', 'B. Personifikasi', 'C. Hiperbola', 'D. Paradoks', 'E. Metonimia'], answer: 'B. Personifikasi' },
+            { id: 26, type: 'mc', text: 'Apa fungsi daftar pustaka dalam teks karya ilmiah?', options: ['A. Menambah halaman agar tebal', 'B. Menunjukkan orisinalitas dan menghargai sumber rujukan', 'C. Syarat kelulusan semata', 'D. Memperindah tata letak', 'E. Tempat menuliskan biografi penulis'], answer: 'B. Menunjukkan orisinalitas dan menghargai sumber rujukan' },
+            { id: 27, type: 'mc', text: 'Kalimat persuasif sering ditemukan pada teks...', options: ['A. Eksplanasi', 'B. Deskripsi', 'C. Berita', 'D. Negosiasi / Iklan', 'E. Laporan'], answer: 'D. Negosiasi / Iklan' },
+            { id: 28, type: 'mc', text: 'Kata "mengevaluasi" bersinonim dengan...', options: ['A. Mengerjakan', 'B. Menilai', 'C. Membaca', 'D. Mengulang', 'E. Mengabaikan'], answer: 'B. Menilai' },
+            { id: 29, type: 'mc', text: 'Jika seorang siswa ingin melamar pekerjaan di industri, jenis surat yang harus dibuat adalah...', options: ['A. Surat dinas', 'B. Surat pribadi', 'C. Surat lamaran pekerjaan', 'D. Surat kuasa', 'E. Surat tugas'], answer: 'C. Surat lamaran pekerjaan' },
+            { id: 30, type: 'mc', text: 'Bentuk tulisan yang berisi ulasan atau penilaian terhadap sebuah karya (buku, film, dll) disebut...', options: ['A. Resensi', 'B. Eksepsi', 'C. Esai', 'D. Artikel', 'E. Jurnal'], answer: 'A. Resensi' },
+
+            // --- BAGIAN B: Benar / Salah (31-40) ---
+            { id: 31, type: 'tf', text: 'Kata "aktivitas", "efektivitas", dan "kreativitas" merupakan bentuk baku menurut Kamus Besar Bahasa Indonesia (KBBI).', options: ['BENAR', 'SALAH'], answer: 'BENAR' },
+            { id: 32, type: 'tf', text: 'Teks eksplanasi adalah teks yang bertujuan menceritakan langkah-langkah atau prosedur pembuatan sesuatu.', options: ['BENAR', 'SALAH'], answer: 'SALAH' },
+            { id: 33, type: 'tf', text: 'Dalam penulisan surat lamaran pekerjaan, kalimat penutup "Atas perhatiannya, saya ucapkan terima kasih banyak" adalah kalimat yang efektif dan baku.', options: ['BENAR', 'SALAH'], answer: 'SALAH' },
+            { id: 34, type: 'tf', text: 'Membaca ekstensif bertujuan untuk mendapatkan informasi secara cepat dan menyeluruh dari berbagai sumber bacaan.', options: ['BENAR', 'SALAH'], answer: 'BENAR' },
+            { id: 35, type: 'tf', text: 'Konjungsi "dan", "atau", "serta" termasuk ke dalam konjungsi temporal.', options: ['BENAR', 'SALAH'], answer: 'SALAH' },
+            { id: 36, type: 'tf', text: 'Cerpen dan novel memiliki perbedaan utama pada kompleksitas alur dan jumlah tokoh.', options: ['BENAR', 'SALAH'], answer: 'BENAR' },
+            { id: 37, type: 'tf', text: 'Kalimat majemuk bertingkat selalu memiliki anak kalimat dan induk kalimat.', options: ['BENAR', 'SALAH'], answer: 'BENAR' },
+            { id: 38, type: 'tf', stimulus: '"Semua siswa SMK 2 Songgom diwajibkan mengikuti upacara bendera. Budi adalah siswa SMK 2 Songgom."', text: 'Berdasarkan premis di atas, simpulan yang benar adalah "Budi diwajibkan mengikuti upacara bendera."', options: ['BENAR', 'SALAH'], answer: 'BENAR' },
+            { id: 39, type: 'tf', text: 'Teks editorial biasanya ditulis oleh pemimpin redaksi atau redaktur senior dari sebuah media massa.', options: ['BENAR', 'SALAH'], answer: 'BENAR' },
+            { id: 40, type: 'tf', text: 'Puisi kontemporer sangat terikat pada aturan rima, bait, dan jumlah suku kata seperti halnya pantun.', options: ['BENAR', 'SALAH'], answer: 'SALAH' },
+
+            // --- BAGIAN C: Pilihan Ganda Kompleks (41-50) ---
+            { id: 41, type: 'complex', 
+              stimulus: 'Kecerdasan Buatan (AI) telah mengubah paradigma dunia kerja. Banyak pekerjaan repetitif mulai digantikan mesin. Namun, AI juga menciptakan lapangan kerja baru yang membutuhkan keterampilan analitis dan pemecahan masalah. Oleh karena itu, pekerja masa depan dituntut untuk terus belajar (long-life learning).',
+              text: 'Pilih 2 (dua) pernyataan yang SESUAI dengan isi paragraf di atas!', 
+              options: ['A. AI hanya memberikan dampak negatif bagi pekerja.', 'B. Pekerjaan yang bersifat repetitif berpotensi besar digantikan oleh mesin.', 'C. Pekerja tidak perlu meningkatkan keterampilan karena AI yang akan bekerja.', 'D. Lapangan kerja baru akibat AI membutuhkan keterampilan analitis.', 'E. Dunia kerja akan sepenuhnya bebas dari campur tangan manusia.'], 
+              answer: [1, 3] }, // Index dari options (B dan D)
+            { id: 42, type: 'complex', 
+              text: 'Manakah dari kata-kata berikut yang termasuk ke dalam kata ganti persona (pronomina persona)? Pilih 3 jawaban benar.', 
+              options: ['A. Saya', 'B. Ini', 'C. Mereka', 'D. Begitu', 'E. Beliau'], 
+              answer: [0, 2, 4] },
+            { id: 43, type: 'complex', 
+              text: 'Ciri-ciri kalimat opini ditunjukkan oleh pernyataan berikut, kecuali... (Pilih 2 yang merupakan ciri FAKTA)', 
+              options: ['A. Mengandung kata "mungkin", "sebaiknya", "menurut saya".', 'B. Data dapat dibuktikan kebenarannya.', 'C. Menunjukkan peristiwa yang telah terjadi.', 'D. Merupakan prediksi atau perkiraan di masa depan.', 'E. Berupa saran dari penulis.'], 
+              answer: [1, 2] },
+            { id: 44, type: 'complex', 
+              stimulus: 'Pantun: \nBuah cempedak di luar pagar,\nAmbil galah tolong jolokkan.\nSaya budak baru belajar,\nKalau salah tolong tunjukkan.',
+              text: 'Pernyataan yang tepat mengenai pantun di atas adalah... (Pilih 2)', 
+              options: ['A. Bersajak a-a-a-a.', 'B. Bersajak a-b-a-b.', 'C. Baris 1 dan 2 adalah isi.', 'D. Baris 1 dan 2 adalah sampiran.', 'E. Pantun tersebut berjenis pantun jenaka.'], 
+              answer: [1, 3] },
+            { id: 45, type: 'complex', 
+              text: 'Tandai unsur-unsur intrinsik yang terdapat dalam sebuah karya sastra fiksi! (Pilih 3)', 
+              options: ['A. Latar belakang penulis', 'B. Tema', 'C. Amanat', 'D. Kondisi sosial masyarakat', 'E. Sudut pandang'], 
+              answer: [1, 2, 4] },
+            { id: 46, type: 'complex', 
+              text: 'Berikut ini adalah struktur penyusun teks editorial/tajuk rencana. (Pilih 2 yang benar)', 
+              options: ['A. Pengenalan isu / Tesis', 'B. Orientasi tokoh', 'C. Penyampaian pendapat / Argumen', 'D. Koda', 'E. Deskripsi bagian'], 
+              answer: [0, 2] },
+            { id: 47, type: 'complex', 
+              text: 'Syarat-syarat paragraf yang baik adalah harus memenuhi unsur... (Pilih 2)', 
+              options: ['A. Kesatuan (Kohesi)', 'B. Kepaduan (Koherensi)', 'C. Ambigu', 'D. Mengandung banyak ide pokok', 'E. Subjektivitas tinggi'], 
+              answer: [0, 1] },
+            { id: 48, type: 'complex', 
+              text: 'Jenis-jenis konjungsi intrakalimat ditunjukkan pada opsi... (Pilih 3)', 
+              options: ['A. Karena', 'B. Oleh karena itu', 'C. Sehingga', 'D. Dengan demikian', 'E. Dan'], 
+              answer: [0, 2, 4] },
+            { id: 49, type: 'complex', 
+              text: 'Dalam menulis surat dinas/resmi, bagian yang wajib ada adalah... (Pilih 3)', 
+              options: ['A. Kop surat (kepala surat)', 'B. Nomor surat', 'C. Salam rindu', 'D. Stempel/Cap instansi', 'E. Post scriptum (NB)'], 
+              answer: [0, 1, 3] },
+            { id: 50, type: 'complex', 
+              stimulus: '"Pemuda adalah agen perubahan. Di era digital ini, literasi digital bukan lagi sekadar pilihan, melainkan keharusan. Tanpa kemampuan memilah informasi, pemuda akan mudah termakan hoaks yang memecah belah bangsa."',
+              text: 'Berdasarkan teks tersebut, manakah simpulan atau interpretasi yang tepat? (Pilih 2)', 
+              options: ['A. Literasi digital wajib dimiliki pemuda era sekarang.', 'B. Pemuda bebas menyebarkan informasi apa saja di internet.', 'C. Hoaks tidak memiliki dampak yang nyata bagi masyarakat.', 'D. Kemampuan memilah informasi mencegah perpecahan.', 'E. Agen perubahan bertugas menyebarkan berita viral.'], 
+              answer: [0, 3] }
+        ];
+
+        // --- 2. STATE MANAGEMENT ---
+        let quizState = {
+            student: { nama: '', nis: '', kelas: '' },
+            answers: {}, // { 0: 'A. ...', 31: 'BENAR', 41: [1, 3] }
+            violations: 0,
+            endTime: null,
+            currentQuestion: 0,
+            isFinished: false
+        };
+
+        let timerInterval;
+
+        // --- 3. INIT & LOAD STATE ---
+        window.onload = () => {
+            const savedState = localStorage.getItem('quiz_state_indo_2026');
+            if (savedState) {
+                const parsed = JSON.parse(savedState);
+                if (parsed.isFinished) {
+                    quizState = parsed;
+                    showResult();
+                } else {
+                    // Resume
+                    quizState = parsed;
+                    document.getElementById('nama').value = quizState.student.nama;
+                    document.getElementById('nis').value = quizState.student.nis;
+                    document.getElementById('kelas').value = quizState.student.kelas;
+                    switchView('view-quiz');
+                    renderQuestion();
+                    renderNumberGrid();
+                    startTimer();
+                }
+            }
+
+            // Tab switch detection
+            document.addEventListener("visibilitychange", handleVisibilityChange);
+            window.addEventListener("blur", () => {
+                if(document.visibilityState !== 'hidden') handleVisibilityChange(true);
+            });
+        };
+
+        function saveState() {
+            localStorage.setItem('quiz_state_indo_2026', JSON.stringify(quizState));
+        }
+
+        // --- 4. TAB SWITCH DETECTION ---
+        function handleVisibilityChange(force = false) {
+            if ((document.hidden || force) && !quizState.isFinished && document.getElementById('view-quiz').classList.contains('active')) {
+                quizState.violations++;
+                saveState();
+                showToast(`PERINGATAN!\nAnda terdeteksi meninggalkan halaman ujian.\nPelanggaran: ${quizState.violations}`);
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 4000);
+        }
+
+        // --- 5. UI NAVIGATION ---
+        function switchView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        // --- 6. QUIZ LOGIC ---
+        function startQuiz() {
+            const nama = document.getElementById('nama').value.trim();
+            const nis = document.getElementById('nis').value.trim();
+            const kelas = document.getElementById('kelas').value.trim();
+
+            if (!nama || !nis || !kelas) {
+                alert("Silakan lengkapi identitas peserta terlebih dahulu.");
+                return;
+            }
+
+            quizState.student = { nama, nis, kelas };
+            if (!quizState.endTime) {
+                quizState.endTime = Date.now() + (120 * 60 * 1000); // 120 minutes
+            }
+            saveState();
+
+            switchView('view-quiz');
+            renderQuestion();
+            renderNumberGrid();
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const now = Date.now();
+                const diff = quizState.endTime - now;
+
+                if (diff <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('timerDisplay').innerText = "⏱️ 00:00";
+                    autoSubmit();
+                    return;
+                }
+
+                const minutes = Math.floor(diff / 1000 / 60);
+                const seconds = Math.floor((diff / 1000) % 60);
+                
+                const minStr = minutes.toString().padStart(2, '0');
+                const secStr = seconds.toString().padStart(2, '0');
+                const timeStr = `⏱️ ${minStr}:${secStr}`;
+                
+                const timerEl = document.getElementById('timerDisplay');
+                timerEl.innerText = timeStr;
+
+                if (minutes === 5 && seconds === 0) showToast("Waktu tersisa 5 menit.");
+                if (minutes === 1 && seconds === 0) {
+                    showToast("Waktu tersisa 1 menit.");
+                    timerEl.classList.add('danger');
+                }
+
+            }, 1000);
+        }
+
+        function renderQuestion() {
+            const idx = quizState.currentQuestion;
+            const q = questions[idx];
+            const container = document.getElementById('question-container');
+            
+            document.getElementById('student-info').innerText = `${quizState.student.nama} - ${quizState.student.kelas}`;
+            document.getElementById('question-counter').innerText = `SOAL ${idx + 1} DARI 50`;
+            
+            let html = '';
+            if (q.stimulus) {
+                html += `<div class="stimulus"><strong>Bacalah teks berikut:</strong><br>${q.stimulus.replace(/\n/g, '<br>')}</div>`;
+            }
+            html += `<div class="question-text">${q.text.replace(/\n/g, '<br>')}</div>`;
+            
+            html += `<div class="options-grid">`;
+            
+            const savedAns = quizState.answers[idx];
+
+            if (q.type === 'mc' || q.type === 'tf') {
+                q.options.forEach((opt) => {
+                    const isSelected = savedAns === opt;
+                    html += `
+                    <label class="option-label ${isSelected ? 'selected' : ''}" onclick="selectOption('${opt.replace(/'/g, "\\'")}', this)">
+                        <input type="radio" name="q${idx}" value="${opt}" ${isSelected ? 'checked' : ''}>
+                        <span>${opt}</span>
+                    </label>`;
+                });
+            } else if (q.type === 'complex') {
+                html += `<p class="text-sm text-primary mb-2"><em>*Pilih lebih dari satu jawaban (Checkbox)</em></p>`;
+                q.options.forEach((opt, optIdx) => {
+                    const isSelected = savedAns && savedAns.includes(optIdx);
+                    html += `
+                    <label class="option-label ${isSelected ? 'selected' : ''}" onclick="selectComplex(${optIdx}, this)">
+                        <input type="checkbox" name="q${idx}" value="${optIdx}" ${isSelected ? 'checked' : ''}>
+                        <span>${opt}</span>
+                    </label>`;
+                });
+            }
+            
+            html += `</div>`;
+            container.innerHTML = html;
+
+            // Nav buttons state
+            document.getElementById('btn-prev').disabled = idx === 0;
+            
+            if (idx === questions.length - 1) {
+                document.getElementById('btn-next').classList.add('hidden');
+                document.getElementById('btn-finish').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-next').classList.remove('hidden');
+                document.getElementById('btn-finish').classList.add('hidden');
+            }
+
+            // Progress bar
+            const answeredCount = Object.keys(quizState.answers).length;
+            const prog = (answeredCount / 50) * 100;
+            document.getElementById('progressBar').style.width = `${prog}%`;
+
+            updateGridActive();
+        }
+
+        // Handle single choice
+        window.selectOption = function(value, el) {
+            quizState.answers[quizState.currentQuestion] = value;
+            saveState();
+            
+            // UI Update
+            const labels = el.parentElement.querySelectorAll('.option-label');
+            labels.forEach(l => l.classList.remove('selected'));
+            el.classList.add('selected');
+            el.querySelector('input').checked = true;
+
+            updateGridColor(quizState.currentQuestion);
+        };
+
+        // Handle complex choice
+        window.selectComplex = function(optIdx, el) {
+            const idx = quizState.currentQuestion;
+            if (!quizState.answers[idx]) quizState.answers[idx] = [];
+            
+            const ansArr = quizState.answers[idx];
+            const pos = ansArr.indexOf(optIdx);
+            
+            if (pos === -1) {
+                ansArr.push(optIdx);
+                el.classList.add('selected');
+                el.querySelector('input').checked = true;
+            } else {
+                ansArr.splice(pos, 1);
+                el.classList.remove('selected');
+                el.querySelector('input').checked = false;
+            }
+
+            if(ansArr.length === 0) {
+                delete quizState.answers[idx];
+            }
+
+            saveState();
+            updateGridColor(idx);
+        };
+
+        window.changeQuestion = function(step) {
+            const newIdx = quizState.currentQuestion + step;
+            if (newIdx >= 0 && newIdx < questions.length) {
+                quizState.currentQuestion = newIdx;
+                saveState();
+                renderQuestion();
+            }
+        };
+
+        function renderNumberGrid() {
+            const grid = document.getElementById('numberGrid');
+            grid.innerHTML = '';
+            for (let i = 0; i < questions.length; i++) {
+                const btn = document.createElement('button');
+                btn.className = `num-btn ${quizState.answers[i] ? 'answered' : ''}`;
+                btn.id = `grid-btn-${i}`;
+                btn.innerText = i + 1;
+                btn.onclick = () => {
+                    quizState.currentQuestion = i;
+                    saveState();
+                    renderQuestion();
+                };
+                grid.appendChild(btn);
+            }
+            updateGridActive();
+        }
+
+        function updateGridColor(idx) {
+            const btn = document.getElementById(`grid-btn-${idx}`);
+            if (btn) {
+                if (quizState.answers[idx]) btn.classList.add('answered');
+                else btn.classList.remove('answered');
+            }
+            // Update progress bar too
+            const answeredCount = Object.keys(quizState.answers).length;
+            const prog = (answeredCount / 50) * 100;
+            document.getElementById('progressBar').style.width = `${prog}%`;
+        }
+
+        function updateGridActive() {
+            document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById(`grid-btn-${quizState.currentQuestion}`);
+            if(btn) btn.classList.add('active');
+        }
+
+        // --- 7. SUBMIT & SCORING ---
+        window.confirmFinish = function() {
+            const modal = document.getElementById('modal-confirm');
+            document.getElementById('modal-title').innerText = "Kumpulkan Ujian";
+            document.getElementById('modal-desc').innerText = "Apakah Anda yakin ingin mengakhiri ujian? Setelah dikumpulkan, jawaban tidak dapat diubah.";
+            document.getElementById('modal-action-btn').onclick = () => {
+                closeModal();
+                autoSubmit();
+            };
+            modal.style.display = 'flex';
+        };
+
+        window.closeModal = function() {
+            document.getElementById('modal-confirm').style.display = 'none';
+        };
+
+        function autoSubmit() {
+            clearInterval(timerInterval);
+            quizState.isFinished = true;
+            
+            // Calculate Score
+            let scoreCount = 0;
+            
+            questions.forEach((q, i) => {
+                const ans = quizState.answers[i];
+                if (!ans) return;
+
+                if (q.type === 'mc' || q.type === 'tf') {
+                    if (ans === q.answer) scoreCount++;
+                } else if (q.type === 'complex') {
+                    // Check if array sets match exactly
+                    const correctAns = q.answer;
+                    if (ans.length === correctAns.length) {
+                        const isAllCorrect = ans.every(val => correctAns.includes(val));
+                        if (isAllCorrect) scoreCount++;
+                    }
+                }
+            });
+
+            const finalScore = Math.round((scoreCount / 50) * 100);
+            quizState.finalScore = finalScore;
+            
+            // Calculate time taken
+            const timeTakenMs = (120 * 60 * 1000) - (quizState.endTime - Date.now());
+            const mins = Math.floor(Math.max(0, timeTakenMs) / 1000 / 60);
+            quizState.timeTaken = `${mins} menit`;
+
+            saveState();
+            saveResultToDatabase(quizState);
+            showResult();
+        }
+
+        function showResult() {
+            switchView('view-result');
+            document.getElementById('res-nama').innerText = quizState.student.nama;
+            document.getElementById('res-nis').innerText = quizState.student.nis;
+            document.getElementById('res-kelas').innerText = quizState.student.kelas;
+            document.getElementById('res-terjawab').innerText = Object.keys(quizState.answers).length;
+            document.getElementById('res-waktu').innerText = quizState.timeTaken || "-";
+            document.getElementById('res-pelanggaran').innerText = quizState.violations;
+            
+            const nilai = quizState.finalScore;
+            const nilaiEl = document.getElementById('res-nilai');
+            const statusEl = document.getElementById('res-status');
+            
+            nilaiEl.innerText = nilai;
+            
+            if (nilai >= 75) {
+                statusEl.innerText = "LULUS";
+                statusEl.style.color = "var(--success)";
+            } else {
+                statusEl.innerText = "BELUM LULUS";
+                statusEl.style.color = "var(--danger)";
+            }
+            
+            // Clear current quiz state so they can't go back, but leave it to prevent retake without clearing
+            // Actually, keep it in localstorage so if refreshed, it shows result screen.
+        }
+
+        // --- 8. TEACHER DASHBOARD ---
+        function saveResultToDatabase(state) {
+            let results = JSON.parse(localStorage.getItem('quiz_results_indo_2026') || '[]');
+            // Check if already exists based on NIS to avoid duplicate on refresh
+            const idx = results.findIndex(r => r.nis === state.student.nis);
+            const data = {
+                nama: state.student.nama,
+                nis: state.student.nis,
+                kelas: state.student.kelas,
+                nilai: state.finalScore,
+                status: state.finalScore >= 75 ? 'LULUS' : 'BELUM LULUS',
+                terjawab: Object.keys(state.answers).length,
+                waktu: state.timeTaken,
+                pelanggaran: state.violations,
+                tanggal: new Date().toLocaleString('id-ID')
+            };
+
+            if (idx >= 0) results[idx] = data;
+            else results.push(data);
+            
+            localStorage.setItem('quiz_results_indo_2026', JSON.stringify(results));
+        }
+
+        window.showTeacherLogin = function() {
+            const user = prompt("Masukkan Username Guru:");
+            if (user === null) return;
+            if (user !== "guru") {
+                alert("Username salah!");
+                return;
+            }
+            const pass = prompt("Masukkan Password:");
+            if (pass === "BahasaIndonesia2026") {
+                renderTeacherTable();
+                switchView('view-teacher');
+            } else {
+                alert("Password salah!");
+            }
+        };
+
+        window.logoutTeacher = function() {
+            // Check where to go back
+            if(quizState.isFinished) switchView('view-result');
+            else switchView('view-login');
+        };
+
+        function renderTeacherTable() {
+            const results = JSON.parse(localStorage.getItem('quiz_results_indo_2026') || '[]');
+            const tbody = document.getElementById('teacher-tbody');
+            tbody.innerHTML = '';
+            
+            if (results.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-light">Belum ada data peserta.</td></tr>';
+                return;
+            }
+
+            results.forEach((r, i) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>${r.nama}</td>
+                        <td>${r.nis}</td>
+                        <td>${r.kelas}</td>
+                        <td class="font-bold">${r.nilai}</td>
+                        <td class="${r.status === 'LULUS' ? 'text-success' : 'text-danger'} font-bold">${r.status}</td>
+                        <td>${r.waktu}</td>
+                        <td>${r.pelanggaran}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        window.confirmClearData = function() {
+            const modal = document.getElementById('modal-confirm');
+            document.getElementById('modal-title').innerText = "Hapus Data";
+            document.getElementById('modal-desc').innerText = "Apakah Anda yakin ingin menghapus seluruh data hasil peserta? Tindakan ini tidak dapat dibatalkan.";
+            document.getElementById('modal-action-btn').onclick = () => {
+                localStorage.removeItem('quiz_results_indo_2026');
+                localStorage.removeItem('quiz_state_indo_2026');
+                renderTeacherTable();
+                closeModal();
+                alert("Data berhasil dihapus.");
+            };
+            modal.style.display = 'flex';
+        };
+
+        // --- 9. EXCEL EXPORT ---
+        window.exportExcel = function() {
+            const results = JSON.parse(localStorage.getItem('quiz_results_indo_2026') || '[]');
+            if (results.length === 0) {
+                alert("Tidak ada data untuk diekspor.");
+                return;
+            }
+
+            // Formatting for Excel
+            const dataForExcel = results.map((r, index) => ({
+                'NO': index + 1,
+                'NAMA PESERTA': r.nama,
+                'NIS': r.nis,
+                'KELAS': r.kelas,
+                'NILAI': r.nilai,
+                'STATUS': r.status,
+                'JUMLAH SOAL': 50,
+                'DIJAWAB': r.terjawab,
+                'TIDAK DIJAWAB': 50 - r.terjawab,
+                'WAKTU PENGERJAAN': r.waktu,
+                'PELANGGARAN PINDAH TAB': r.pelanggaran,
+                'TANGGAL/JAM': r.tanggal
+            }));
+
+            try {
+                // Try using SheetJS if loaded via CDN
+                const ws = XLSX.utils.json_to_sheet(dataForExcel);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Rekap Hasil");
+                XLSX.writeFile(wb, "Rekap_Ulangan_Harian_Bahasa_Indonesia_Kelas_XII_2026.xlsx");
+            } catch (e) {
+                // Fallback to CSV if library fails or offline
+                console.warn("SheetJS error, falling back to CSV.", e);
+                let csvContent = "data:text/csv;charset=utf-8,";
+                
+                // Headers
+                csvContent += Object.keys(dataForExcel[0]).join(",") + "\n";
+                // Rows
+                dataForExcel.forEach(row => {
+                    csvContent += Object.values(row).map(val => `"${val}"`).join(",") + "\n";
+                });
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "Rekap_Ulangan_Harian_Bahasa_Indonesia_Kelas_XII_2026.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        };
+
+    </script>
+</body>
+</html>
